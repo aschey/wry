@@ -145,26 +145,18 @@ impl WV for InnerWebView {
 
         // Navigation
         if let Some(url) = url {
-          if url.cannot_be_a_base() {
-            let s = url.as_str();
-            if let Some(pos) = s.find(',') {
-              let (_, path) = s.split_at(pos + 1);
-              w.navigate_to_string(path)?;
+          let mut url_string = String::from(url.as_str());
+          if let Some(name) = custom_protocol_name {
+            if name == url.scheme() {
+              // WebView2 doesn't support non-standard protocols yet, so we have to use this workaround
+              // See https://github.com/MicrosoftEdge/WebView2Feedback/issues/73
+              url_string = url.as_str().replace(
+                &format!("{}://", name),
+                &format!("file://custom-protocol-{}", name),
+              )
             }
-          } else {
-            let mut url_string = String::from(url.as_str());
-            if let Some(name) = custom_protocol_name {
-              if name == url.scheme() {
-                // WebView2 doesn't support non-standard protocols yet, so we have to use this workaround
-                // See https://github.com/MicrosoftEdge/WebView2Feedback/issues/73
-                url_string = url.as_str().replace(
-                  &format!("{}://", name),
-                  &format!("file://custom-protocol-{}", name),
-                )
-              }
-            }
-            w.navigate(&url_string)?;
           }
+          w.navigate(&url_string)?;
         }
 
         let _ = controller_clone.set(controller);
